@@ -1,44 +1,82 @@
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 const prisma = new PrismaClient();
 
-// Inscription
+/**
+ * Inscription d’un nouvel utilisateur
+ */
 export const register = async (req, res) => {
   try {
-    const { full_name, email, password, role } = req.body;
-    const passwordHash = await bcrypt.hash(password, 10);
+    const { full_name, email, password, role, phone } = req.body;
 
-    const user = await prisma.user.create({
-      data: { full_name, email, passwordHash, role },
+    // Vérifier si l’email existe déjà
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+      return res.status(400).json({ error: "Email déjà utilisé" });
+    }
+
+    // Hachage du mot de passe
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Création de l’utilisateur
+    const newUser = await prisma.user.create({
+      data: {
+        full_name,
+        email,
+        phone,
+        password_hash: hashedPassword,
+        role: role || "soignant",
+      },
     });
 
-    res.status(201).json({ message: "Utilisateur créé", user });
+    // Génération du token
+    const token = jwt.sign(
+      { id: newUser.id, role: newUser.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    res.status(201).json({ token, user: { id: newUser.id, email: newUser.email, role: newUser.role } });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error("Erreur register:", error);
+    res.status(500).json({ error: "Erreur serveur" });
   }
 };
 
-// Connexion
+/**
+ * Connexion d’un utilisateur existant
+ */
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user) return res.status(401).json({ message: "Utilisateur non trouvé" });
+    // Vérifier l’existence de l’utilisateur
+    const user = await prisma.user.findUnique({
+      where: { email },
+    });
 
-    const isValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isValid) return res.status(401).json({ message: "Mot de passe incorrect" });
+    if (!user) {
+      return res.status(401).json({ error: "Utilisateur non trouvé" });
+    }
 
+    // Vérifier le mot de passe
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: "Mot de passe incorrect" });
+    }
+
+    // Générer un JWT
     const token = jwt.sign(
       { id: user.id, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: "7d" }
     );
 
-    res.json({ token });
+    res.json({ token, user: { id: user.id, email: user.email, role: user.role } });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Erreur login:", error);
+    res.status(500).json({ error: "Erreur serveur" });
   }
 };
