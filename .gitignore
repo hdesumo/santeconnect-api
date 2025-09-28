@@ -15,3 +15,5 @@ node_modules/.prisma/
 # macOS
 .DS_Store
 
+node_modules/
+.DS_Store
