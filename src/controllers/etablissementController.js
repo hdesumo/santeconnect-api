@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// Liste tous les établissements
 export const getEtablissements = async (req, res) => {
   try {
     const etablissements = await prisma.etablissement.findMany({
@@ -13,6 +14,7 @@ export const getEtablissements = async (req, res) => {
   }
 };
 
+// Récupère un établissement par ID
 export const getEtablissementById = async (req, res) => {
   try {
     const etablissement = await prisma.etablissement.findUnique({

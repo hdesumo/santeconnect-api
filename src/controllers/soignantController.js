@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// Liste tous les soignants
 export const getSoignants = async (req, res) => {
   try {
     const soignants = await prisma.soignant.findMany({
@@ -13,6 +14,7 @@ export const getSoignants = async (req, res) => {
   }
 };
 
+// Récupère un soignant par ID
 export const getSoignantById = async (req, res) => {
   try {
     const soignant = await prisma.soignant.findUnique({
