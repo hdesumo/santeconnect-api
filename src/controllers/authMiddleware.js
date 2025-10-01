@@ -1,40 +1,20 @@
-import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { PrismaClient } from "@prisma/client";
+import pool from "../config/db.js";
 
-const prisma = new PrismaClient();
+export const authenticateToken = async (req, res, next) => {
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+  if (!token) return res.sendStatus(401);
 
-export const register = async (req, res) => {
   try {
-    const { full_name, email, password, role } = req.body;
-    const passwordHash = await bcrypt.hash(password, 10);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    const user = await prisma.user.create({
-      data: { full_name, email, passwordHash, role },
-    });
+    const { rows } = await pool.query("SELECT id, email FROM users WHERE id=$1", [decoded.id]);
+    if (rows.length === 0) return res.sendStatus(403);
 
-    res.status(201).json(user);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-};
-
-export const login = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await prisma.user.findUnique({ where: { email } });
-
-    if (!user) return res.status(401).json({ message: "Utilisateur non trouvé" });
-
-    const isValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isValid) return res.status(401).json({ message: "Mot de passe incorrect" });
-
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, {
-      expiresIn: "7d",
-    });
-
-    res.json({ token });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    req.user = rows[0];
+    next();
+  } catch (err) {
+    return res.sendStatus(403);
   }
 };

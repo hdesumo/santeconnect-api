@@ -1,9 +1,13 @@
 import express from "express";
-import { applyToMission } from "../controllers/applicationController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
+import { getCandidatures, applyToOffre } from "../controllers/applicationController.js";
 
 const router = express.Router();
 
-router.post("/:id/apply", authMiddleware, applyToMission);
+// Toutes les candidatures
+router.get("/", authMiddleware, getCandidatures);
+
+// Postuler à une offre
+router.post("/", authMiddleware, applyToOffre);
 
 export default router;

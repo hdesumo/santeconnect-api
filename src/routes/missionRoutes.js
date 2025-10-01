@@ -1,10 +1,13 @@
 import express from "express";
-import { createMission, getMissions } from "../controllers/missionController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
+import { getMissions, createMission } from "../controllers/missionController.js";
 
 const router = express.Router();
 
+// Toutes les missions (offres)
+router.get("/", authMiddleware, getMissions);
+
+// Créer une mission (offre)
 router.post("/", authMiddleware, createMission);
-router.get("/", getMissions);
 
 export default router;

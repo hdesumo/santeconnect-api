@@ -1,28 +1,20 @@
-import { PrismaClient } from "@prisma/client";
+import pool from "../config/db.js";
 
-const prisma = new PrismaClient();
-
-// Liste tous les soignants
 export const getSoignants = async (req, res) => {
   try {
-    const soignants = await prisma.soignant.findMany({
-      include: { user: true },
-    });
-    res.json(soignants);
+    const { rows } = await pool.query('SELECT * FROM "Soignant"');
+    res.json(rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// Récupère un soignant par ID
 export const getSoignantById = async (req, res) => {
   try {
-    const soignant = await prisma.soignant.findUnique({
-      where: { id: parseInt(req.params.id) },
-      include: { user: true },
-    });
-    if (!soignant) return res.status(404).json({ message: "Soignant non trouvé" });
-    res.json(soignant);
+    const { id } = req.params;
+    const { rows } = await pool.query('SELECT * FROM "Soignant" WHERE id=$1', [id]);
+    if (rows.length === 0) return res.status(404).json({ error: "Soignant non trouvé" });
+    res.json(rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -1,20 +1,23 @@
-import { PrismaClient } from "@prisma/client";
+import pool from "../config/db.js";
 
-const prisma = new PrismaClient();
-
-export const applyToMission = async (req, res) => {
+export const getCandidatures = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { rows } = await pool.query('SELECT * FROM "Candidature"');
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
 
-    const application = await prisma.application.create({
-      data: {
-        missionId: parseInt(id),
-        soignantId: req.user.id, // simplifié, à améliorer
-      },
-    });
-
-    res.status(201).json(application);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
+export const applyToOffre = async (req, res) => {
+  try {
+    const { soignantId, offreId } = req.body;
+    const { rows } = await pool.query(
+      'INSERT INTO "Candidature" (soignant_id, offre_id) VALUES ($1, $2) RETURNING *',
+      [soignantId, offreId]
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
