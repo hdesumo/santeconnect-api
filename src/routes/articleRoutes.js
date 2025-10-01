@@ -1,20 +1,16 @@
 import express from "express";
+import { getArticles, getArticleById, createArticle } from "../controllers/articleController.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
-import { 
-  getArticles, 
-  getArticleById, 
-  createArticle 
-} from "../controllers/articleController.js";
 
 const router = express.Router();
 
-// Tous les articles
+// Liste des articles (public)
 router.get("/", getArticles);
 
-// Article par ID
+// Article par ID (public)
 router.get("/:id", getArticleById);
 
-// Créer un article (protégé, par ex admin ou auteur connecté)
+// Création article (protégé)
 router.post("/", authMiddleware, createArticle);
 
 export default router;

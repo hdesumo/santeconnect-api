@@ -1,22 +1,24 @@
 import jwt from "jsonwebtoken";
-import pool from "../config/db.js";
 
-export const authMiddleware = async (req, res, next) => {
+export function authMiddleware(req, res, next) {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
-  if (!token) return res.status(401).json({ error: "Token manquant" });
+  if (!token) {
+    return res.status(401).json({ error: "Accès refusé. Token manquant" });
+  }
 
   try {
+    console.log("🔑 Token reçu:", token.substring(0, 30) + "..."); 
+    console.log("🔐 JWT_SECRET utilisé:", process.env.JWT_SECRET);
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log("✅ Décodé:", decoded);
 
-    // Vérifier si l’utilisateur existe encore en DB
-    const { rows } = await pool.query("SELECT id, email FROM users WHERE id = $1", [decoded.id]);
-    if (rows.length === 0) return res.status(403).json({ error: "Utilisateur non trouvé" });
-
-    req.user = rows[0];
+    req.user = decoded;
     next();
   } catch (err) {
-    return res.status(403).json({ error: "Token invalide ou expiré" });
+    console.error("❌ Erreur validation token:", err.message);
+    return res.status(403).json({ error: "Token invalide ou expiré", details: err.message });
   }
-};
+}
