@@ -1,9 +1,14 @@
 // src/db.js
-const { Pool } = require('pg');
+import pkg from "pg";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const { Pool } = pkg;
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL, // ton URL Railway
-  ssl: { rejectUnauthorized: false }, // utile avec Railway/Heroku
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false,
 });
 
-module.exports = pool;
+export default pool;
